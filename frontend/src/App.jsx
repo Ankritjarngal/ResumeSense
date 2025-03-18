@@ -1,17 +1,19 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import Test from './components/Test'
+import { Routes, Route, BrowserRouter } from 'react-router-dom';
+import { Background } from './pages/Background';
+import { FileInput } from './components/FileInput';
+import { ScoreVisualizationPage } from './pages/ScoreVisualizationPage ';
 
 function App() {
-
   return (
-    <>
-    <Test></Test>
-    
-    </>
-  )
+    <BrowserRouter>
+      <Background>
+        <Routes>
+          <Route path="/" element={<FileInput />} />
+          <Route path="/score-visualization" element={<ScoreVisualizationPage />} />
+        </Routes>
+      </Background>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
