@@ -2,7 +2,7 @@ const { configDotenv } = require("dotenv");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 configDotenv();
-const api_key = process.env.google_api_key;
+const api_key = process.env.GOOGLE_API_KEY;
 const genAI = new GoogleGenerativeAI(api_key);
 
 async function report(data) {
