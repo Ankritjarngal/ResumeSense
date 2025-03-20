@@ -47,7 +47,7 @@ app.post("/upload", upload.single("resume"), async (req, res) => {
         await uploadToPinecone(req.file.filename, embeddings,JSON.stringify(entities) );
 
         console.log("Upload successful");
-        res.json({ success: true, filename: req.file.filename ,scoreByAi});
+        res.json({ success: true, filename: req.file.filename ,scoreByAi,extractedData:entities});
     } catch (err) {
         console.error("Error processing the file:", err);
         res.status(500).json({ error: "Error processing the file" });
