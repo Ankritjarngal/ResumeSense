@@ -2,6 +2,11 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+// Cloudinary configuration
+const CLOUDINARY_UPLOAD_PRESET = "resume_uploads"; // Create this in your Cloudinary dashboard
+const CLOUDINARY_CLOUD_NAME = "dfkjcuf8t"; // Replace with your cloud name
+const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
+
 export function FileInput() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState("");
@@ -10,7 +15,9 @@ export function FileInput() {
   const [progress, setProgress] = useState(0);
   const [score, setScore] = useState(null);
   const navigate = useNavigate();
-  const [extractedData,setExtractedData] = useState("");
+  const [extractedData, setExtractedData] = useState("");
+  const [cloudinaryUrl, setCloudinaryUrl] = useState("");
+  const [cloudinaryPublicId, setCloudinaryPublicId] = useState("");
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -26,7 +33,7 @@ export function FileInput() {
       }
     }
   };
-
+  
   const parseScore = (scoreString) => {
     try {
       const jsonStr = scoreString.replace(/```json|```/g, "").trim(); // Remove backticks and extra text
@@ -36,44 +43,83 @@ export function FileInput() {
       return null;
     }
   };
-  const handleUploadClick = () => {
-    setButtonText("Uploading...");
+  
+  const uploadToCloudinary = async (file) => {
     const formData = new FormData();
-    formData.append("resume", selectedFile);
-
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  
     try {
-        axios
-            .post("http://localhost:5001/upload", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-                onUploadProgress: (progressEvent) => {
-                    const percent = Math.round(
-                        (progressEvent.loaded * 100) / progressEvent.total
-                    );
-                    setProgress(percent);
-                },
-            })
-            .then((response) => {
-                const scoreByAi = response.data.scoreByAi || "";
-                const extractedData = response.data.extractedData || "";
-
-                const parsedScore = scoreByAi ? parseScore(scoreByAi) : null;
-                const parsedData = extractedData ? parseScore(extractedData) : null;
-
-                setScore(parsedScore);
-                setExtractedData(parsedData);
-                setButtonText("Upload");
-
-                navigate("/score-visualization", {
-                    state: { score: parsedScore, data: parsedData },
-                });
-            });
-    } catch (err) {
-        setScore("Error processing the file. Try again...");
+      const response = await axios.post(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/raw/upload`, 
+        formData,
+        {
+          onUploadProgress: (progressEvent) => {
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setProgress(percent);
+          }
+        }
+      );
+  
+      return {
+        url: response.data.secure_url,
+        publicId: response.data.public_id
+      };
+    } catch (error) {
+      console.error("Cloudinary upload error:", error);
+      throw error;
     }
-};
-
+  };
+  
+  
+  const handleUploadClick = async () => {
+    setButtonText("Uploading...");
+    
+    try {
+      // First upload to Cloudinary
+      const { url, publicId } = await uploadToCloudinary(selectedFile);
+      setCloudinaryUrl(url);
+      setCloudinaryPublicId(publicId);
+      console.log("Cloudinary upload successful. URL:", url);
+      
+      // Then send to your server
+      const formData = new FormData();
+      formData.append("resume", selectedFile);
+      formData.append("cloudinaryUrl", url);
+      formData.append("cloudinaryPublicId", publicId);
+      
+      const response = await axios.post("http://localhost:5001/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        }
+      });
+      
+      const scoreByAi = response.data.scoreByAi || "";
+      const extractedData = response.data.extractedData || "";
+      
+      const parsedScore = scoreByAi ? parseScore(scoreByAi) : null;
+      const parsedData = extractedData ? parseScore(extractedData) : null;
+      
+      setScore(parsedScore);
+      setExtractedData(parsedData);
+      setButtonText("Upload");
+      
+      navigate("/score-visualization", {
+        state: { 
+          score: parsedScore, 
+          data: parsedData,
+          fileUrl: url,
+          publicId: publicId
+        },
+      });
+    } catch (err) {
+      console.error("Upload error:", err);
+      setError("Error uploading file: " + err.message);
+      setButtonText("Upload");
+    }
+  };
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -118,7 +164,16 @@ export function FileInput() {
 
       {progress > 0 && !score && (
         <div className="mt-4">
-          <progress value={progress} max="100" />
+          <progress value={progress} max="100" className="w-full" />
+          <p className="text-center text-sm text-gray-400">{progress}%</p>
+        </div>
+      )}
+      
+      {cloudinaryUrl && (
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+          <p className="text-green-800">
+            File uploaded to Cloudinary successfully!
+          </p>
         </div>
       )}
     </div>

@@ -131,7 +131,7 @@ export function ScoreVisualizationPage() {
   
   return (
     <div className="score-visualization p-6 bg-slate-800 rounded-lg shadow-lg text-gray-100">
-      <h2 className="text-center mb-6 text-2xl font-bold text-gray-100">Resume Score Visualization</h2>
+      <h2 className="text-center mb-8 text-3xl font-bold text-gray-100">Resume Score Visualization</h2>
       
       {/* Small Circular Progress Bars in One Line */}
       <div className={`flex justify-center items-center space-x-6 mb-12 transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
