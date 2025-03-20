@@ -9,7 +9,8 @@ export function FileInput() {
   const [buttonText, setButtonText] = useState("Upload");
   const [progress, setProgress] = useState(0);
   const [score, setScore] = useState(null);
-  const navigate = useNavigate();  // Hook to navigate between pages
+  const navigate = useNavigate();
+  const [extractedData,setExtractedData] = useState("");
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -26,44 +27,64 @@ export function FileInput() {
     }
   };
 
+  const parseScore = (scoreString) => {
+    try {
+      const jsonStr = scoreString.replace(/```json|```/g, "").trim(); // Remove backticks and extra text
+      return JSON.parse(jsonStr); // Convert string to JSON
+    } catch (error) {
+      console.error("Error parsing score JSON:", error);
+      return null;
+    }
+  };
   const handleUploadClick = () => {
     setButtonText("Uploading...");
     const formData = new FormData();
     formData.append("resume", selectedFile);
+
     try {
-      axios
-        .post("http://localhost:5001/upload", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          onUploadProgress: (progressEvent) => {
-            const percent = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            setProgress(percent);
-          },
-        })
-        .then((response) => {
-          setScore(response.data); 
-          setButtonText("Upload");
-          navigate('/score-visualization', { state: { score: response.data } });
-        });
+        axios
+            .post("http://localhost:5001/upload", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+                onUploadProgress: (progressEvent) => {
+                    const percent = Math.round(
+                        (progressEvent.loaded * 100) / progressEvent.total
+                    );
+                    setProgress(percent);
+                },
+            })
+            .then((response) => {
+                const scoreByAi = response.data.scoreByAi || "";
+                const extractedData = response.data.extractedData || "";
+
+                const parsedScore = scoreByAi ? parseScore(scoreByAi) : null;
+                const parsedData = extractedData ? parseScore(extractedData) : null;
+
+                setScore(parsedScore);
+                setExtractedData(parsedData);
+                setButtonText("Upload");
+
+                navigate("/score-visualization", {
+                    state: { score: parsedScore, data: parsedData },
+                });
+            });
     } catch (err) {
-      setScore("Error processing the file. Try again...");
+        setScore("Error processing the file. Try again...");
     }
-  };
+};
+
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <h1 className="text-2xl  text-center mb-30">Upload your resume</h1>
-      
+      <h1 className="text-2xl text-center mb-30">Upload your resume</h1>
+
       <label
         htmlFor="pdf-upload"
         className="block w-full px-4 text-black text-lg py-3 text-center bg-gray-100 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-200 transition-colors mb-3"
       >
         {selectedFile ? selectedFile.name : "Choose PDF File"}
       </label>
-      
 
       <input
         id="pdf-upload"
@@ -80,7 +101,9 @@ export function FileInput() {
           <p className="text-black">
             Selected file: <span className="font-medium">{selectedFile.name}</span>
           </p>
-          <p className="text-black text-sm">Size: {(selectedFile.size / 1024).toFixed(2)} KB</p>
+          <p className="text-black text-sm">
+            Size: {(selectedFile.size / 1024).toFixed(2)} KB
+          </p>
         </div>
       )}
 

@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { data, useLocation } from 'react-router-dom';
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { SearchResume } from '../components/SearchResume';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 export function ScoreVisualizationPage() {
   const location = useLocation();
-  const { score } = location.state || {};
+  const score = location.state?.score || {};
+  const extractedData = location.state?.data || {};
+  
+
   
   // Animation state
   const [animatedValues, setAnimatedValues] = useState({
@@ -235,58 +239,12 @@ export function ScoreVisualizationPage() {
           <p className="text-center text-lg mt-2 font-bold text-gray-100">Overall Score</p>
         </div>
       </div>
-      
-      {/* Bar Chart for Overall Comparison */}
-      <div className={`mt-8 transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`} style={{transitionDelay: "0.8s"}}>
-        <h3 className="text-center mb-4 text-xl font-semibold text-gray-100">Score Breakdown</h3>
-        <div className="h-80 bg-slate-700 p-4 rounded-lg shadow-md">
-          <Bar 
-            data={chartData} 
-            options={{ 
-              responsive: true, 
-              maintainAspectRatio: false,
-              animation: {
-                duration: 1500
-              },
-              plugins: {
-                legend: {
-                  display: false
-                },
-                tooltip: {
-                  enabled: true,
-                  backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                  titleFont: {
-                    size: 14
-                  },
-                  bodyFont: {
-                    size: 13
-                  }
-                }
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  max: 100,
-                  grid: {
-                    color: 'rgba(255, 255, 255, 0.1)'
-                  },
-                  ticks: {
-                    color: 'rgba(255, 255, 255, 0.7)'
-                  }
-                },
-                x: {
-                  grid: {
-                    display: false
-                  },
-                  ticks: {
-                    color: 'rgba(255, 255, 255, 0.7)'
-                  }
-                }
-              }
-            }} 
-          />
-        </div>
+      <div>
+        <SearchResume data={extractedData}></SearchResume>
       </div>
+      
+     
+      
     </div>
   );
 }
