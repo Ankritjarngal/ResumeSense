@@ -2,9 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
+const path = require('path');
 const pdfParse = require('pdf-parse');
-const natural = require('natural');
-const stopword = require('stopword');
 const { extractEntities } = require('./ner.js');
 const { report } = require('./score.js');
 const { searchPinecone } = require('./pineconeSearch.js');
@@ -12,61 +11,73 @@ const { uploadToPinecone } = require('./pineconeUpload.js');
 const { generateEmbedding } = require('./generateEmbedding.js');
 
 const app = express();
-const corsOptions = {
-    origin: "*",
-    methods: "GET,POST",
-    allowedHeaders: "Content-Type",
-};
-
-app.use(cors(corsOptions));
+app.use(cors({ origin: "*", methods: "GET,POST", allowedHeaders: "Content-Type" }));
 app.use(express.json());
-const upload = multer({ dest: 'uploads/' });
+
+// Create 'uploads' directory if it doesn't exist
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
+}
+
+const upload = multer({ dest: 'uploads/temp/' });
+
+// Ensure temp upload directory exists
+if (!fs.existsSync('uploads/temp')) {
+    fs.mkdirSync('uploads/temp', { recursive: true });
+}
 
 app.post("/upload", upload.single("resume"), async (req, res) => {
     if (!req.file) {
-        console.error("No file received!");
         return res.status(400).json({ error: "Please upload a file" });
     }
-
-    console.log("File uploaded:", req.file);
 
     try {
         const dataBuffer = fs.readFileSync(req.file.path);
         const dataB = await pdfParse(dataBuffer);
         
         const entities = extractEntities(dataB.text);
+        const scoreByAi = await report(entities);
 
-        // Delete uploaded file after processing
-        scoreByAi=await report(entities);
         const embeddings = await generateEmbedding(JSON.stringify(entities));
         if (!embeddings) {
-            console.error("Failed to generate embeddings!");
             return res.status(500).json({ error: "Invalid embedding generated." });
         }
 
-        await uploadToPinecone(req.file.filename, embeddings,JSON.stringify(entities) );
+        await uploadToPinecone(req.file.filename, embeddings, JSON.stringify(entities));
 
-        console.log("Upload successful");
-        res.json({ success: true, filename: req.file.filename ,scoreByAi,extractedData:entities});
+        // Make a permanent copy of the uploaded file with .pdf extension
+        const destinationPath = path.join(__dirname, 'uploads', `${req.file.filename}.pdf`);
+        fs.copyFileSync(req.file.path, destinationPath);
+
+        res.json({ success: true, filename: req.file.filename, scoreByAi, extractedData: entities });
     } catch (err) {
-        console.error("Error processing the file:", err);
+        console.error("Error processing file:", err);
         res.status(500).json({ error: "Error processing the file" });
     } finally {
-        // Clean up the uploaded file
+        // Delete only the temporary file
         fs.promises.unlink(req.file.path).catch(console.error);
     }
 });
 
-
-const extractEmailAndPhone = (text) => {
-    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-    const phoneRegex = /\+?91[-.\s]?\d{5}[-.\s]?\d{5}|\b\d{10}\b|\b\d{3,4}[-.\s]?\d{6,8}\b/g;
-
-    const emails = text.match(emailRegex) || [];
-    const phones = text.match(phoneRegex) || [];
-
-    return { emails, phones };
-};
+// Add this route to serve PDF files
+app.get("/pdf/:id", async (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'uploads', `${req.params.id}.pdf`);
+        
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).send("File not found");
+        }
+        
+        // Set proper content type for PDF
+        res.setHeader('Content-Type', 'application/pdf');
+        // Send the file
+        res.sendFile(filePath);
+    } catch (err) {
+        console.error("Error serving PDF:", err);
+        res.status(500).send("Error serving PDF file");
+    }
+});
 
 app.post("/search", async function (req, res) {
     try {
@@ -81,12 +92,8 @@ app.post("/search", async function (req, res) {
         const results = await searchPinecone(embedding);
         res.json(results);
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: "Error searching Pinecone", details: err.message });
     }
 });
 
-
-app.listen(5001, () => {
-    console.log("Server is running on port 5001");
-});
+app.listen(5001, () => console.log("Server running on port 5001"));

@@ -7,22 +7,22 @@ async function initPinecone() {
 }
 
 function cleanText(text) {
-    return text.replace(/\n+/g, " ",).replace(/\s+/g, " ").trim(); 
+    return text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-async function uploadToPinecone(id, vector, extractedText) {
+async function uploadToPinecone(publicId, vector, extractedText) {
     if (!Array.isArray(vector) || vector.length !== 1024) {
         throw new Error("Vector must be an array of length 1024.");
     }
 
     const client = await initPinecone();
-    const index = client.Index(process.env.PINECONE_INDEX_NAME);
+    const index = client.index(process.env.PINECONE_INDEX_NAME);
 
-    const metadata = { extractedText: cleanText(extractedText) }; 
+    const metadata = { public_id: publicId, extractedText: cleanText(extractedText) };
 
-    console.log("Uploading data to Pinecone:", { id, values: vector, metadata });
+    console.log("Uploading to Pinecone:", { publicId, values: vector, metadata });
 
-    return await index.upsert([{ id, values: vector, metadata }]);
+    return await index.upsert([{ id: publicId, values: vector, metadata }]);
 }
 
 module.exports = { uploadToPinecone };
