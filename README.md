@@ -11,8 +11,7 @@ This project is a **Resume Parser and Evaluator** that extracts structured infor
 - Stores resume embeddings in **Pinecone** for efficient retrieval.
 - Enables **semantic search** to find resumes similar to a query.
 
-## Pinecone Integration (Vector Database)(only backend for pinecone stuff is done yet)
-
+## Pinecone Integration (Vector Database)
 ### **Uploading Resumes to Pinecone**
 1. **Resume Parsing**: Extracts structured data (skills, experience, education, etc.) and generates a text summary.
 2. **Embedding Generation**: Converts the extracted text into a numerical vector (1024-dimension) using an embedding model.
