@@ -18,15 +18,24 @@ This project is a **Resume Parser and Evaluator** that extracts structured infor
 3. **Data Cleaning**: Removes unnecessary characters (e.g., `\n`, extra spaces) for better metadata storage.
 4. **Upsert to Pinecone**: Stores the vector along with structured metadata in Pinecone for future searches.
 
-*
-
 ### **Searching Resumes in Pinecone**
 1. **Query Embedding Generation**: Converts the search query into a numerical vector.
 2. **Pinecone Query**: Searches the vector database for the most similar resumes.
 3. **Filtering Results**: Filters results based on a similarity threshold.
 4. **Returning Matches**: Returns the most relevant resumes along with metadata.
 
+## Tech Stack
+- **Frontend:** ReactJS, Tailwind CSS
+- **Backend:** Node.js, Express.js
+- **Database:** PostgreSQL, MongoDB
+- **AI/NLP:** Named Entity Recognition (NER), Pinecone (Vector Database)
+- **Cloud Storage:** Cloudinary
+- **Web Scraping:** Internshala Job Scraper
 
 
-This setup ensures **efficient storage and retrieval** of resumes based on their **semantic similarity**, allowing for a smarter and faster search process.
+## Live Demo
+- [Live Application](https://resume-everything.vercel.app/)
+- [GitHub Repository](https://github.com/Ankritjarngal/resume-evaluator)
 
+## Author
+- **Ankrit Jarngal** ([GitHub](https://github.com/Ankritjarngal)) ([LinkedIn](https://linkedin.com/in/AnkritJarngal))
