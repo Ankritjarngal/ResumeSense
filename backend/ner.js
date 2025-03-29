@@ -46,6 +46,7 @@ const extractEntities = (text) => {
     }
 };
 
+
 // Extract person name (simplified approach)
 const extractPersonName = (text) => {
     // Get first few lines of resume (where name is typically found)
@@ -207,6 +208,9 @@ const extractSkills = (text) => {
     return skills;
 };
 
+
+
+
 // Helper to extract specific sections of text
 const extractSectionText = (text, sectionHeaderRegex) => {
     // Common section headers for resumes
@@ -288,8 +292,54 @@ const extractSections = (text) => {
     return sections;
 };
 
-// Add new endpoint for analyzing resumes with NER
+const extractRelevantInternshipSkills = (text) => {
+    // Only the most strategic skills that are both common Internshala filters 
+    // AND frequently mentioned in job descriptions
+    const highImpactSkills = [
+        // Tech (the most frequently requested)
+        'python',
+        'java',
+        'react',
+        'web development',
+        'data science',
+        'machine learning',
+        
+        // Business (high demand on Internshala)
+        'digital marketing',
+        'content writing',
+        'social media marketing',
+        
+        // Design (common filters)
+        'ui/ux',
+        'graphic design',
+        
+        // Finance/Business
+        'financial analysis',
+        'business development',
+        
+        // Analytics tools
+        'excel',
+        'sql',
+        
+        // General skills with high search volume
+        'communication',
+        'marketing',
+        'research'
+    ];
 
+    const skills = new Set();
+    
+    // Simple text matching to find these high-impact skills
+    for (const skill of highImpactSkills) {
+        // Create a case-insensitive pattern with word boundaries to ensure we match complete terms
+        const pattern = new RegExp('\\b' + skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+        if (pattern.test(text)) {
+            skills.add(skill);
+        }
+    }
+    
+    return Array.from(skills);
+};
 module.exports={
-    extractEntities
+    extractEntities,extractRelevantInternshipSkills
 }

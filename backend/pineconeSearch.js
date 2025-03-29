@@ -2,7 +2,7 @@ require("dotenv").config();
 const { Pinecone } = require("@pinecone-database/pinecone");
 
 async function initPinecone() {
-    const client = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
+    const client = new Pinecone({ apiKey:process.env.pinecone_api_key });
     return client;
 }
 
@@ -12,7 +12,7 @@ async function searchPinecone(embedding, topK = 5, similarityThreshold = 0.1) {
     }
 
     const client = await initPinecone();
-    const index = client.index(process.env.PINECONE_INDEX_NAME);
+    const index = client.index("resume-data");
 
     const response = await index.query({
         vector: embedding,

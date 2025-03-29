@@ -2,47 +2,39 @@ const { configDotenv } = require("dotenv");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 configDotenv();
-const api_key = process.env.GOOGLE_API_KEY;
+const api_key =process.env.google_api_key;
 const genAI = new GoogleGenerativeAI(api_key);
 
 async function report(data) {
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-    const systemPrompt = `"You are an AI-powered resume scorer. Given a structured resume, evaluate it based on the following parameters and provide scores ONLY. Scores should range from 0 to 10, with 10 being the highest. The scoring should be fair but slightly lenient, allowing minor improvements to positively impact the score. Consider industry standards while ensuring candidates receive constructive scoring.
+    const systemPrompt = `**"You are an AI-powered resume evaluator. Given a structured resume, score it objectively based on the following criteria while ensuring fairness. Scores should range from 0 to 10, with 10 being the highest.
+
+Your evaluation should follow industry best practices while being slightly optimistic, allowing well-presented details to positively impact the score. Minor weaknesses should not drastically reduce scores unless they significantly affect job suitability.
 
 Scoring Parameters:
 
- How well does the resume match the given job description?
-Education Score – Evaluate the educational qualifications, their relevance, and prestige.
-Work Experience Score – Consider years of experience, role progression, and relevancy.
-Skills Score – Assess the skills section based on quantity, quality, and relevance.
-Projects & Certifications Score – Evaluate the listed projects and certifications for their impact.
-Achievements & Awards Score – Consider professional recognitions and awards.
-Communication & Formatting Score – Assess readability, grammar, and overall presentation.
-Overall Score – A weighted average of all factors, ensuring a balanced evaluation.*
-Response Format (JSON Only, No Extra Text):
-make sure when evaluating the projects dont just go for the quantity but the quality too
-give equal importance to the quality and quanity,
-if the candidate has done a lot of projects but they are not of good quality then the score should be low
-if the candidate has done few projects but they are of good quality then the score should be high
-if the candidate is a fresher dont judge the experience score that harshly
+    Education Score – Consider the relevance, prestige, and impact of educational qualifications.
+    Work Experience Score – Evaluate role progression, impact, and relevancy. For freshers, assess internships, freelance work, or academic projects fairly without penalizing lack of full-time experience.
+    Skills Score – Measure the depth, relevance, and uniqueness of skills rather than just quantity. Specialized skills should be given higher weightage.
+    Projects & Certifications Score – Focus equally on quality and quantity. A few impactful projects should score higher than many irrelevant or low-impact ones.
+    Achievements & Awards Score – Consider the significance and uniqueness of recognitions, not just the number of awards.
+    Communication & Formatting Score – Assess readability, structure, grammar, and clarity. A well-structured resume with clear sections and professional formatting should score higher.
+    Overall Score – A weighted average ensuring a balanced yet slightly encouraging evaluation.
 
-json
-Copy
-Edit
+Response Format (JSON Only, No Extra Text):
+
 {
     "Education Score": 7.5,
-    "Work Experience Score": 6.5,
-    "Skills Score": 9.0,
-    "Projects & Certifications Score": 8.0,
-    "Achievements & Awards Score": 5.5,
-    "Communication & Formatting Score": 8.0,
-    "Overall Score": 7.5
+    "Work Experience Score": 7.0,
+    "Skills Score": 9.2,
+    "Projects & Certifications Score": 8.5,
+    "Achievements & Awards Score": 6.8,
+    "Communication & Formatting Score": 8.3,
+    "Overall Score": 8.0
 }
-Ensure fairness, but allow slight score boosts where applicable. Do not include any explanations or extra text—return only JSON.
 
-
-`;
+Ensure fairness, but give reasonable score boosts where applicable. Do not include explanations or extra text—return only JSON.”**`;
         const msg = `parsed resume: ${JSON.stringify(data)}`;
         
         const result = await model.generateContent({

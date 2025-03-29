@@ -4,7 +4,7 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const pdfParse = require('pdf-parse');
-const { extractEntities } = require('./ner.js');
+const { extractEntities, extractRelevantInternshipSkills } = require('./ner.js');
 const { report } = require('./score.js');
 const { searchPinecone } = require('./pineconeSearch.js');
 const { uploadToPinecone } = require('./pineconeUpload.js');
@@ -36,6 +36,7 @@ app.post("/upload", upload.single("resume"), async (req, res) => {
         const dataB = await pdfParse(dataBuffer);
         
         const entities = extractEntities(dataB.text);
+        const skills = extractRelevantInternshipSkills(dataB.text);
         const scoreByAi = await report(entities);
 
         const embeddings = await generateEmbedding(JSON.stringify(entities));
@@ -49,7 +50,7 @@ app.post("/upload", upload.single("resume"), async (req, res) => {
         const destinationPath = path.join(__dirname, 'uploads', `${req.file.filename}.pdf`);
         fs.copyFileSync(req.file.path, destinationPath);
 
-        res.json({ success: true, filename: req.file.filename, scoreByAi, extractedData: entities });
+        res.json({ success: true, filename: req.file.filename, scoreByAi, extractedData: entities , extractedSkills:skills});
     } catch (err) {
         console.error("Error processing file:", err);
         res.status(500).json({ error: "Error processing the file" });
@@ -93,6 +94,26 @@ app.post("/search", async function (req, res) {
         res.json(results);
     } catch (err) {
         res.status(500).json({ error: "Error searching Pinecone", details: err.message });
+    }
+});
+app.post("/uploadonly", upload.single("resume"), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: "Please upload a file" });
+    }
+
+    try {
+        const dataBuffer = fs.readFileSync(req.file.path);
+        const dataB = await pdfParse(dataBuffer);
+        const skills=extractRelevantInternshipSkills(dataB.text);
+        const entities = extractEntities(dataB.text);
+        const scoreByAi = await report(entities);
+
+        res.json({ success: true, filename: req.file.filename, scoreByAi, extractedData: entities ,extractedSkills: skills});
+    } catch (err) {
+        console.error("Error processing file:", err);
+        res.status(500).json({ error: "Error processing the file" });
+    } finally {
+        fs.promises.unlink(req.file.path).catch(console.error);
     }
 });
 
