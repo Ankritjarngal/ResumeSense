@@ -10,6 +10,7 @@ This project is a **Resume Parser and Evaluator** that extracts structured infor
 - Provides an **overall score** along with scores for different sections.
 - Stores resume embeddings in **Pinecone** for efficient retrieval.
 - Enables **semantic search** to find resumes similar to a query.
+- **Web Scraping Integration**: Fetches relevant internship opportunities from **Internshala** based on resume content.
 
 ## Pinecone Integration (Vector Database)
 ### **Uploading Resumes to Pinecone**
@@ -24,18 +25,10 @@ This project is a **Resume Parser and Evaluator** that extracts structured infor
 3. **Filtering Results**: Filters results based on a similarity threshold.
 4. **Returning Matches**: Returns the most relevant resumes along with metadata.
 
-## Tech Stack
-- **Frontend:** ReactJS, Tailwind CSS
-- **Backend:** Node.js, Express.js
-- **Database:** PostgreSQL, MongoDB
-- **AI/NLP:** Named Entity Recognition (NER), Pinecone (Vector Database)
-- **Cloud Storage:** Cloudinary
-- **Web Scraping:** Internshala Job Scraper
+## Web Scraping for Internship Recommendations
+1. **Extract Resume Skills & Experience**: Identifies key skills, education, and work experience from the resume.
+2. **Internship Matching**: Uses web scraping to fetch relevant internships from **Internshala** based on extracted data.
+3. **User-Friendly Interface**: Displays matching internships and provides a **one-click redirect** to the Internshala page for easy application.
+4. **Real-time Updates**: Ensures users get the latest internship listings tailored to their profile.
 
-
-## Live Demo
-- [Live Application](https://resume-everything.vercel.app/)
-- [GitHub Repository](https://github.com/Ankritjarngal/resume-evaluator)
-
-## Author
-- **Ankrit Jarngal** ([GitHub](https://github.com/Ankritjarngal)) ([LinkedIn](https://linkedin.com/in/AnkritJarngal))
+This setup ensures **efficient storage and retrieval** of resumes based on their **semantic similarity**, while also providing **personalized internship recommendations** to users in real-time.
