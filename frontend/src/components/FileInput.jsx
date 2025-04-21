@@ -1,12 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle, XCircle } from "lucide-react";
-
-
-const CLOUDINARY_UPLOAD_PRESET = "resume_uploads";
-const CLOUDINARY_CLOUD_NAME = "dfkjcuf8t";
-const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
+import { CheckCircle, XCircle, Upload, FileText } from "lucide-react";
 
 export function FileInput() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -18,9 +13,7 @@ export function FileInput() {
   const [storeResume, setStoreResume] = useState(true);
   const navigate = useNavigate();
   const [extractedData, setExtractedData] = useState("");
-  const [cloudinaryUrl, setCloudinaryUrl] = useState("");
-  const [cloudinaryPublicId, setCloudinaryPublicId] = useState("");
-  const[buttondata,setButtonData] = useState("Hide My Resume from Others");
+  const [buttondata, setButtonData] = useState("Hide My Resume from Others");
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -36,98 +29,63 @@ export function FileInput() {
     }
   };
 
-  const handleUploadOnlyScore = async () => {
-    setButtonText("Processing...");
-    try {
-      const formData = new FormData();
-      formData.append("resume", selectedFile);
-
-      const response = await axios.post("https://resumeprivate.onrender.com/uploadonly", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const scoreByAi = response.data.scoreByAi || "";
-      const extractedData = response.data.extractedData || "";
-      const extractedSkills=response.data.extractedSkills|| "";
-      
-
-      const parsedScore = scoreByAi ? parseScore(scoreByAi) : null;
-      const parsedData = extractedData ? parseScore(extractedData) : null;
-
-      setScore(parsedScore);
-      setExtractedData(parsedData);
-      setButtonText("Upload");
-
-      navigate("/score-visualization", {
-        state: { score: parsedScore, data: parsedData , skills:extractedSkills},
-      });
-    } catch (err) {
-      console.error("Upload error:", err);
-      setError("Error processing file: " + err.message);
-      setButtonText("Upload");
-    }
-  };
-
   const parseScore = (scoreString) => {
     try {
-      const jsonStr = scoreString.replace(/```json|```/g, "").trim();
-      return JSON.parse(jsonStr);
+      if (!scoreString) return null;
+      if (typeof scoreString === 'object') return scoreString;
+      let cleanString = scoreString.replace(/```json\n|\n```|```/g, "").trim();
+      return JSON.parse(cleanString);
     } catch (error) {
-      console.error("Error parsing score JSON:", error);
+      console.error("Error parsing score JSON:", error, "Original string:", scoreString);
       return null;
     }
   };
 
-  const uploadToCloudinary = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  const handleUpload = async () => {
+    setButtonText("Uploading...");
 
     try {
-      const response = await axios.post(CLOUDINARY_UPLOAD_URL, formData, {
+      const formData = new FormData();
+      formData.append("resume", selectedFile);
+
+      const endpoint = storeResume 
+        ? "https://resumeprivate.onrender.com/upload"
+        : "https://resumeprivate.onrender.com/uploadonly";
+
+      const response = await axios.post(endpoint, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (progressEvent) => {
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setProgress(percent);
         },
       });
 
-      return { url: response.data.secure_url, publicId: response.data.public_id };
-    } catch (error) {
-      console.error("Cloudinary upload error:", error);
-      throw error;
-    }
-  };
+      let scoreByAi = null;
+      let extractedSkills = "";
 
-  const handleUploadClick = async () => {
-    setButtonText("Uploading...");
+      if (response.data.scoreByAi) {
+        const parsedScoreData = parseScore(response.data.scoreByAi);
+        if (parsedScoreData) {
+          scoreByAi = parsedScoreData.score || null;
+          extractedSkills = parsedScoreData.mainskills || "";
+        }
+      }
 
-    try {
-      const { url, publicId } = await uploadToCloudinary(selectedFile);
-      setCloudinaryUrl(url);
-      setCloudinaryPublicId(publicId);
-      console.log("Cloudinary upload successful. URL:", url);
-
-      const formData = new FormData();
-      formData.append("resume", selectedFile);
-      formData.append("cloudinaryUrl", url);
-      formData.append("cloudinaryPublicId", publicId);
-
-      const response = await axios.post("https://resumeprivate.onrender.com/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const scoreByAi = response.data.scoreByAi || "";
       const extractedData = response.data.extractedData || "";
+      const parsedData = extractedData ? 
+        (typeof extractedData === 'object' ? extractedData : parseScore(extractedData)) 
+        : null;
 
-      const parsedScore = scoreByAi ? parseScore(scoreByAi) : null;
-      const parsedData = extractedData ? parseScore(extractedData) : null;
-
-      setScore(parsedScore);
+      setScore(scoreByAi);
       setExtractedData(parsedData);
       setButtonText("Upload");
 
       navigate("/score-visualization", {
-        state: { score: parsedScore, data: parsedData, fileUrl: url, publicId: publicId },
+        state: { 
+          score: scoreByAi, 
+          data: parsedData, 
+          skills: extractedSkills 
+        },
       });
     } catch (err) {
       console.error("Upload error:", err);
@@ -137,70 +95,106 @@ export function FileInput() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-gray-900 shadow-xl rounded-lg border border-gray-700 sm:max-w-lg md:max-w-xl">
-      <h1 className="text-2xl font-semibold text-center mb-5 text-gray-100">Upload your resume</h1>
+    <div className="w-full max-w-md mx-auto p-8 bg-gray-900 shadow-2xl rounded-xl border border-gray-700 sm:max-w-lg md:max-w-xl flex flex-col items-center">
+      <h1 className="text-3xl font-bold text-center mb-6 text-gray-100">Upload Your Resume</h1>
+      
+      <div className="w-full mb-6">
+        <div className="relative">
+          <label htmlFor="pdf-upload" className="flex items-center justify-center w-full px-4 py-4 text-lg text-gray-200 bg-gray-800 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer hover:bg-gray-750 hover:border-blue-500 transition-all duration-300 group">
+            <div className="flex flex-col items-center space-y-2">
+              <FileText size={32} className="text-blue-400 group-hover:text-blue-300" />
+              <span className="font-medium">
+                {selectedFile ? selectedFile.name : "Choose PDF File"}
+              </span>
+              {!selectedFile && <span className="text-sm text-gray-400">Drag and drop or click to browse</span>}
+            </div>
+          </label>
+          <input id="pdf-upload" type="file" accept=".pdf,application/pdf" onChange={handleFileChange} className="hidden" />
+        </div>
 
-      <label
-        htmlFor="pdf-upload"
-        className="block w-full px-4 py-3 text-lg text-gray-200 bg-gray-800 border border-gray-600 rounded-md cursor-pointer hover:bg-gray-700 transition mb-3 text-center truncate"
-      >
-        {selectedFile ? selectedFile.name : "Choose PDF File"}
-      </label>
-
-      <input id="pdf-upload" type="file" accept=".pdf,application/pdf" onChange={handleFileChange} className="hidden" />
-
-      {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+        {error && (
+          <div className="mt-3 px-4 py-2 bg-red-900/30 border border-red-800 rounded-lg">
+            <p className="text-red-400 text-sm flex items-center">
+              <XCircle size={16} className="mr-2" />
+              {error}
+            </p>
+          </div>
+        )}
+      </div>
 
       {selectedFile && (
-        <div className="mt-4 p-3 bg-gray-800 border border-gray-700 rounded-md">
-          <p className="text-gray-300">Selected file: <span className="font-medium text-gray-100">{selectedFile.name}</span></p>
-          <p className="text-gray-400 text-sm">Size: {(selectedFile.size / 1024).toFixed(2)} KB</p>
+        <div className="w-full mt-2 mb-4 p-4 bg-gray-800/80 border border-gray-700 rounded-lg">
+          <div className="flex items-center">
+            <FileText size={24} className="text-blue-400 mr-3" />
+            <div>
+              <p className="text-gray-200 font-medium">{selectedFile.name}</p>
+              <p className="text-gray-400 text-sm">{(selectedFile.size / 1024).toFixed(2)} KB</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {progress > 0 && !score && (
+        <div className="w-full mt-4 mb-4">
+          <div className="relative pt-1">
+            <div className="flex mb-2 items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-200 bg-blue-800">
+                  Uploading
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-xs font-semibold inline-block text-blue-200">
+                  {progress}%
+                </span>
+              </div>
+            </div>
+            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded-full bg-gray-700">
+              <div
+                style={{ width: `${progress}%` }}
+                className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600 transition-all duration-300 ease-in-out"
+              ></div>
+            </div>
+          </div>
         </div>
       )}
 
       {button && (
         <button
-          className="w-full mt-4 px-4 py-3 text-white bg-blue-700 border border-blue-800 rounded-md hover:bg-blue-600 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-          onClick={storeResume ? handleUploadClick : handleUploadOnlyScore}
+          className="w-full mt-2 px-6 py-4 text-white bg-blue-700 rounded-lg hover:bg-blue-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 shadow-lg flex items-center justify-center"
+          onClick={handleUpload}
+          disabled={buttonText !== "Upload"}
         >
-          {buttonText}
+          {buttonText === "Upload" ? (
+            <>
+              <Upload size={20} className="mr-2" />
+              {buttonText}
+            </>
+          ) : (
+            buttonText
+          )}
         </button>
       )}
 
-<button
-  className={`mt-3 w-60 px-6 py-2.5 text-sm font-medium flex items-center justify-center gap-2 rounded-lg transition-all focus:outline-none focus:ring-2 ${
-    storeResume
-      ? "bg-blue-800 hover:bg-blue-900 text-white focus:ring-blue-500"
-      : "bg-gray-900 hover:bg-gray-800 text-gray-300 focus:ring-gray-600"
-  }`}
-  onClick={() => {
-    setStoreResume((prev) => {
-      const newValue = !prev;
-      setButtonData(newValue ? "Use My Resume" : "Don't Use Resume");
-      return newValue;
-    });
-  }}
->
-  {storeResume ? <CheckCircle size={18} /> : <XCircle size={18} />}
-  <span className="whitespace-nowrap">{buttondata}</span>
-</button>
-
-
-
-      {progress > 0 && !score && (
-        <div className="mt-4">
-          <div className="w-full bg-gray-700 rounded-full h-2.5">
-            <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
-          </div>
-          <p className="text-center text-sm text-gray-400 mt-1">{progress}%</p>
-        </div>
-      )}
-
-      {cloudinaryUrl && (
-        <div className="mt-4 p-3 bg-blue-700 border border-green-700 rounded-md text-black">
-          <p className="text-green-300">File uploaded successfully!</p>
-        </div>
-      )}
+      <div className="w-full mt-5 border-t border-gray-700 pt-4">
+        <button
+          className={`w-full px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 ${
+            storeResume
+              ? "bg-blue-800/60 hover:bg-blue-700 text-white focus:ring-blue-500"
+              : "bg-gray-800 hover:bg-gray-700 text-gray-300 focus:ring-gray-600"
+          }`}
+          onClick={() => {
+            setStoreResume((prev) => {
+              const newValue = !prev;
+              setButtonData(newValue ? "Hide My Resume from Others" : "Don't Use Resume");
+              return newValue;
+            });
+          }}
+        >
+          {storeResume ? <CheckCircle size={18} /> : <XCircle size={18} />}
+          <span>{buttondata}</span>
+        </button>
+      </div>
     </div>
   );
 }
