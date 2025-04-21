@@ -14,23 +14,24 @@ async function searchPinecone(embedding, topK = 5, similarityThreshold = 0.1) {
     const client = await initPinecone();
     const index = client.index("resume-data");
 
+    console.log(`Searching Pinecone with vector of length ${embedding.length}`);
+
     const response = await index.query({
         vector: embedding,
         topK: topK,
         includeMetadata: true,
     });
 
-    if (!response.matches) {
-        return [];
-    }
+    if (!response.matches) return [];
 
-    // Return only results with a high enough similarity score
     return response.matches
         .filter(match => match.score >= similarityThreshold)
         .map(match => ({
+            score: match.score,
             public_id: match.metadata?.public_id || "unknown",
-            extractedText: match.metadata?.extractedText || "",
-            score: match.score
+            entities: match.metadata?.entities || "{}",
+            fileName: match.metadata?.fileName || "N/A",
+            driveUrl: match.metadata?.driveUrl || ""
         }));
 }
 

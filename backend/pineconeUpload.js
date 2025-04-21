@@ -1,16 +1,7 @@
 require("dotenv").config();
 const { Pinecone } = require("@pinecone-database/pinecone");
 
-async function initPinecone() {
-    const client = new Pinecone({ apiKey:process.env.pinecone_api_key });
-    return client;
-}
-
-function cleanText(text) {
-    return text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
-}
-
-async function uploadToPinecone(publicId, vector, extractedText) {
+async function uploadToPinecone(publicId, vector, metadata) {
     if (!Array.isArray(vector) || vector.length !== 1024) {
         throw new Error("Vector must be an array of length 1024.");
     }
@@ -18,11 +9,25 @@ async function uploadToPinecone(publicId, vector, extractedText) {
     const client = await initPinecone();
     const index = client.index("resume-data");
 
-    const metadata = { public_id: publicId, extractedText: cleanText(extractedText) };
+    // Process metadata to ensure it's properly structured
+    const processedMetadata = {
+        public_id: publicId,
+        entities: typeof metadata.entities === 'string' ? metadata.entities : JSON.stringify(metadata.entities),
+        driveUrl: metadata.driveUrl || '',
+        fileName: metadata.fileName || 'unknown',
+    };
 
-    console.log("Uploading to Pinecone:", { publicId, values: vector, metadata });
+    console.log("Uploading to Pinecone:", { 
+        publicId, 
+        vectorLength: vector.length,
+        metadataKeys: Object.keys(processedMetadata)
+    });
 
-    return await index.upsert([{ id: publicId, values: vector, metadata }]);
+    return await index.upsert([{ 
+        id: publicId, 
+        values: vector, 
+        metadata: processedMetadata 
+    }]);
 }
 
 module.exports = { uploadToPinecone };
