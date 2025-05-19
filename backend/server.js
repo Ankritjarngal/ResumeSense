@@ -27,7 +27,7 @@ const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/drive'],
 });
 const drive = google.drive({ version: 'v3', auth });
-const FOLDER_ID = '';
+const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID || '1v0a2x4Xk3g5Z7b6q8z9Y5J6Q9F1G3h4K'; // Replace with your folder ID
 
 // Upload file to Google Drive
 async function uploadToDrive(filePath, originalName) {
@@ -67,7 +67,7 @@ app.post("/upload", upload.single("resume"), async (req, res) => {
     const filePath = req.file.path;
     const fileName = req.file.originalname;
 
-    console.log(`📥 Received file: ${fileName}`);
+    console.log(` Received file: ${fileName}`);
 
     try {
         const dataBuffer = fs.readFileSync(filePath);
@@ -78,7 +78,7 @@ app.post("/upload", upload.single("resume"), async (req, res) => {
         const skills = extractRelevantInternshipSkills(text);
         const scoreByAi = await report(entities);
 
-        console.log("✅ Resume parsed and analyzed");
+        console.log(" Resume parsed and analyzed");
 
         // Upload to Drive
         const driveFile = await uploadToDrive(filePath, fileName);
@@ -87,7 +87,7 @@ app.post("/upload", upload.single("resume"), async (req, res) => {
         let embeddings = await generateEmbedding(JSON.stringify(entities));
         if (!Array.isArray(embeddings)) throw new Error("Invalid embeddings generated");
 
-        console.log("🧠 Embeddings generated");
+        console.log(" Embeddings generated");
 
         // Upload to Pinecone
         await uploadToPinecone(req.file.filename, embeddings, {
@@ -96,7 +96,7 @@ app.post("/upload", upload.single("resume"), async (req, res) => {
             fileName: fileName,
         });
 
-        console.log("🌲 Uploaded to Pinecone");
+        console.log(" Uploaded to Pinecone");
 
         res.json({
             success: true,
@@ -107,7 +107,7 @@ app.post("/upload", upload.single("resume"), async (req, res) => {
             extractedSkills: skills,
         });
     } catch (err) {
-        console.error("❌ Error in /upload:", err);
+        console.error(" Error in /upload:", err);
         res.status(500).json({
             error: "Internal Server Error",
             message: err.message,
@@ -139,7 +139,7 @@ app.post("/uploadonly", upload.single("resume"), async (req, res) => {
             extractedSkills: skills,
         });
     } catch (err) {
-        console.error("❌ Error in /uploadonly:", err);
+        console.error(" Error in /uploadonly:", err);
         res.status(500).json({ error: "Processing Error", message: err.message });
     } finally {
         fs.promises.unlink(req.file.path).catch(console.error);
@@ -162,11 +162,11 @@ app.post("/search", async (req, res) => {
 
         res.json(results); // ✅ return directly
     } catch (err) {
-        console.error("❌ Error in /search:", err);
+        console.error(" Error in /search:", err);
         res.status(500).json({ error: "Search error", message: err.message });
     }
 });
 
 
 
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(` Server running on http://localhost:${PORT}`));

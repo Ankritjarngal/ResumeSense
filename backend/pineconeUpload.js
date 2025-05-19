@@ -1,6 +1,15 @@
 require("dotenv").config();
 const { Pinecone } = require("@pinecone-database/pinecone");
 
+async function initPinecone() {
+    const client = new Pinecone({ 
+        apiKey: process.env.PINECONE_API_KEY,
+    });
+    return client;
+}
+
+
+
 async function uploadToPinecone(publicId, vector, metadata) {
     if (!Array.isArray(vector) || vector.length !== 1024) {
         throw new Error("Vector must be an array of length 1024.");

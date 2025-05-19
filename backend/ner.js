@@ -182,7 +182,7 @@ const extractSkills = (text) => {
             'machine learning', 'ai', 'data science', 'statistics', 'analytics', 'big data',
             'hadoop', 'spark', 'tableau', 'power bi', 'excel', 'vba', 'sap', 'salesforce',
             'linux', 'windows', 'ios', 'android', 'swift', 'kotlin', 'objective-c', 'mobile',
-            'ui', 'ux', 'photoshop', 'illustrator', 'figma', 'sketch', 'indesign', 'adobe'
+            'ui', 'ux', 'photoshop', 'illustrator', 'figma', 'sketch', 'indesign', 'adobe',
         ];
         
         // Create a big regex from all skills
